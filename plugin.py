@@ -43,7 +43,7 @@ plugin_info = {
     "name": "vnStat",
     "home": "https://github.com/wiserain/vnStat_sjva",
     "more": "https://github.com/wiserain/vnStat_sjva",
-    "description": "호스트의 vnStat 통계정보를 보여주는 플러그인",
+    "description": "vnStat 정보를 보여주는 플러그인",
     "developer": "wiserain",
     "zip": "https://github.com/wiserain/vnStat_sjva/archive/master.zip",
     "icon": ""
