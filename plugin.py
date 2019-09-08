@@ -35,6 +35,19 @@ def plugin_load():
 
 def plugin_unload():
     Logic.plugin_unload()
+
+
+plugin_info = {
+    "catogory_name": "tool",
+    "version": "0.0.9.1",
+    "name": "vnStat",
+    "home": "https://github.com/wiserain/vnStat_sjva",
+    "more": "https://github.com/wiserain/vnStat_sjva",
+    "description": "호스트의 vnStat 통계정보를 보여주는 플러그인",
+    "developer": "wiserain",
+    "zip": "https://github.com/wiserain/vnStat_sjva/archive/master.zip",
+    "icon": ""
+}
 #########################################################
 
 
