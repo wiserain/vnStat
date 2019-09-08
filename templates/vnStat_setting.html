@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div>
+  <nav>
+    {{ macros.m_tab_head_start() }}
+      {{ macros.m_tab_head('일반', true) }}
+    {{ macros.m_tab_head_end() }}
+  </nav>
+  <div class="tab-content" id="nav-tabContent">
+    <!-- 일반 -->
+    {{ macros.m_tab_content_start('일반', true) }}
+      {# {{ macros.setting_global_scheduler_button(arg['scheduler'], arg['is_running']) }} #}
+      <form id='setting' name='setting'>
+        {# {{ macros.setting_input_int('interval', '트래픽 모니터링 주기', value=arg['interval'], min='1', placeholder='2', desc='minute 단위') }} #}
+        {# {{ macros.setting_checkbox('auto_start', '시작시 자동실행', value=arg['auto_start'], desc='On : 시작시 자동으로 스케쥴러에 등록됩니다.') }} #}
+        {{ macros.setting_button_with_info([['install_vnstat_btn', '설치하기']], 'vnStat 설치', 'Windows는 지원하지 않음') }}
+        {{ macros.setting_select_and_buttons('default_interface_id', '기본 인터페이스', [['','']], [['get_interface_btn', '목록 가져오기']], col='8', desc=['기본으로 보여줄 네트워크 인터페이스 선택']) }}
+        {{ macros.setting_radio('default_traffic_view', '기본 트래픽 보기', ['시간대별', '일별', '월별', 'Top10'], value=arg['default_traffic_view']) }}
+        {{ macros.setting_radio('traffic_unit', '트래픽 표시 단위', ['SI 단위 (MB, GB, TB)', 'IEC 단위 (MiB, GiB, TiB)'], value=arg['traffic_unit']) }}
+        {{ macros.setting_button([['global_setting_save_btn', '저장']]) }}
+      </form>
+      
+    {{ macros.m_tab_content_end() }}
+    
+  </div><!--tab-content-->
+</div> <!--전체-->
+
+
+
+<script type="text/javascript">
+
+var package_name = 'vnStat';
+var current_data = null;
+var default_interface_id = "{{arg['default_interface_id']}}"
+
+$(document).ready(function(){
+  
+  $(function() {
+    $.ajax({
+      url: '/' + package_name + '/ajax/get_vnstat_info',
+      type: "POST",
+      cache: false,
+      data: {},
+      dataType: "json",
+      success: function (data) {
+        current_data = data.data;
+        if (data.ret == 'success') {
+          get_interface(default_interface_id)
+        }
+      }
+    });
+  });
+
+});
+
+// 스케쥴링 on / off
+$('#scheduler').change(function() {
+  var ret = $(this).prop('checked');
+  $.ajax({
+    url: '/' + package_name + '/ajax/scheduler',
+    type: "POST", 
+    cache: false,
+    data: {scheduler : ret},
+    dataType: "json",
+    success: function (list) {
+    }
+  });
+});
+
+// vnstat 설치 버튼
+$("body").on('click', '#install_vnstat_btn', function(e){
+  e.preventDefault();
+  $.ajax({
+    url: '/' + package_name + '/ajax/install_vnstat',
+    type: "POST",
+    cache: false,
+    dataType: "json",
+    success: function (data) {
+      if (data.ret =='success') {          
+        redirect = '/command/api/command'
+        $.redirectPost(redirect, {command: data.command});
+      } else if (data.ret =='installed') {
+        $.notify('<strong>이미 설치되어 있습니다.</strong><br>' + data.log, {
+          type: 'success'
+        });
+      } else {
+        $.notify('<strong>실패하였습니다.</strong><br>' + data.log, {
+        type: 'warning'
+        });
+      }
+    }
+  });
+});
+
+// interface 가져오기
+$("body").on('click', '#get_interface_btn', function(e){
+  e.preventDefault();
+  $.ajax({
+    url: '/' + package_name + '/ajax/get_default_interface_id',
+    type: "POST",
+    cache: false,
+    data: {},
+    dataType: "json",
+    success: function (data) {
+      default_interface_id = data.default_interface_id;
+      get_vnstat_info(default_interface_id)
+    }
+  });
+});
+
+function get_vnstat_info(id) {
+  $.ajax({
+    url: '/' + package_name + '/ajax/get_vnstat_info',
+    type: "POST",
+    cache: false,
+    data: {},
+    dataType: "json",
+    success: function (data) {
+      current_data = data.data;
+      if (data.ret == 'success') {
+        $.notify('<strong>성공적으로 가져왔습니다.</strong><br>' + data.data.length + '개의 인터페이스',{
+          type: 'success'
+        });
+        get_interface(id)
+      } else if (data.ret =='no_bin') {
+        $.notify('<strong>실패하였습니다.</strong><br>' + 'vnStat를 먼저 설치해 주세요.',{
+          type: 'warning'
+        });
+      } else if (data.ret =='no_json') {
+        $.notify('<strong>실패하였습니다.</strong><br>' + '유효한 json 값이 아님 - 데이터베이스 확인 필요요망',{
+          type: 'warning'
+        });
+      } else if (data.ret =='parsing_error') {
+        $.notify('<strong>실패하였습니다.</strong><br>' + 'json 분석 실패 - 개발자에게 보고바람',{
+          type: 'warning'
+        });
+      }
+    }
+  });
+}
+
+function get_interface(id) {
+  str = ''
+  current_traffic = current_data[0]
+  for (i in current_data) {
+    str += `<option value="${current_data[i].id}">${current_data[i].id}</option>`
+    if (current_data[i].id == id) {
+      current_traffic = current_data[i]
+    }
+  }
+  document.getElementById("default_interface_id").innerHTML = str;
+  document.getElementById('default_interface_id').value = current_traffic.id;
+}
+
+
+</script>    
+{% endblock %}

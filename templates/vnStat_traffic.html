@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="collapse" id="show_if_error"></div>
+
+<div id="selection_header" class="form-group mb-0 ml-2">
+  <label class="d-inline-block" for="interface_id">네트워크 인터페이스</label>
+  <select name="interface_id" class="form-control form-control-sm d-inline-block ml-1 mr-1" style="width: auto;" id="interface_id">
+  </select>
+  <button id="change_interface_btn" name="change_interface_btn" class="btn btn-sm btn-outline-success mb-1">선택</button>
+</div>
+
+<div id="summary_card" class="card mt-3">
+  <div class="card-header">트래픽 요약</div>
+  <div class="card-body">
+    <p id="dbdates_p" class="card-text mt-0 mb-1 text-sm-right small text-muted">
+    </p>
+    <table id="tbl_summary" class="table table-sm mb-0">
+    </table>
+  </div>
+</div>
+
+<div class="mt-3 mb-3">
+  <nav>
+    {{ macros.m_tab_head_start() }}
+      {{ macros.m_tab_head('시간대별', (arg['default_traffic_view']=='0')) }}
+      {{ macros.m_tab_head('일별', (arg['default_traffic_view']=='1')) }}
+      {{ macros.m_tab_head('월별', (arg['default_traffic_view']=='2')) }}
+      {{ macros.m_tab_head('Top10', (arg['default_traffic_view']=='3')) }}
+    {{ macros.m_tab_head_end() }}
+  </nav>
+  <div class="tab-content" id="nav-tabContent">
+    {{ macros.m_tab_content_start('시간대별', (arg['default_traffic_view']=='0')) }}
+      <div class="card border-0 m-2" style="height: 300px;">
+        <canvas id="chart_hours"></canvas>
+      </div>
+      <div class="card border-0 ml-4 mr-4 mt-2">
+        <table id="tbl_hours" class="table table-sm"></table>
+        </div>      
+    {{ macros.m_tab_content_end() }}
+    {{ macros.m_tab_content_start('일별', (arg['default_traffic_view']=='1')) }}
+      <div class="card border-0 m-2" style="height: 300px;">
+        <canvas id="chart_days"></canvas>
+      </div>
+      <div class="card border-0 ml-4 mr-4 mt-2">
+        <table id="tbl_days" class="table table-sm"></table>
+        </div>      
+    {{ macros.m_tab_content_end() }}
+    {{ macros.m_tab_content_start('월별', (arg['default_traffic_view']=='2')) }}
+      <div class="card border-0 m-2" style="height: 300px;">
+        <canvas id="chart_months"></canvas>
+      </div>
+      <div class="card border-0 ml-4 mr-4 mt-2">
+        <table id="tbl_months" class="table table-sm"></table>
+        </div>      
+    {{ macros.m_tab_content_end() }}
+    {{ macros.m_tab_content_start('Top10', (arg['default_traffic_view']=='3')) }}
+      <div class="card border-0 m-2" style="height: 300px;">
+        <canvas id="chart_tops"></canvas>
+      </div>
+      <div class="card border-0 ml-4 mr-4 mt-2">
+        <table id="tbl_tops" class="table table-sm"></table>
+        </div>      
+    {{ macros.m_tab_content_end() }}
+  </div> <!--tab-content-->
+</div> <!--전체-->
+
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.bundle.min.js" integrity="sha256-xKeoJ50pzbUGkpQxDYHD7o7hxe0LaOGeguUidbq6vis=" crossorigin="anonymous"></script>
+
+
+<script type="text/javascript">
+  var package_name = 'vnStat';
+  var current_data = null;
+  var current_interface_id = null;
+  var current_traffic = null;
+  var default_interface_id = "{{arg['default_interface_id']}}"
+  var bytes_in_si = ("{{arg['traffic_unit']}}" == "0")
+
+  $(document).ready(function () {
+    $.ajax({
+      url: '/' + package_name + '/ajax/get_vnstat_info',
+      type: "POST",
+      cache: false,
+      data: {},
+      dataType: "json",
+      success: function (data) {
+        // 넘겨받은 데이터 저장
+        current_data = data;
+        // console.log(data)
+        // m_modal 로 데이터 확인 편리
+        // m_modal(data);
+        if (data.ret == 'success') {
+          make_html(default_interface_id)
+        } else {
+          make_error(data.log)
+        }
+      }
+    });
+  });
+
+  function make_error(data) {
+    // to show_if_error
+    str = `
+    <div class="form-group mb-0 ml-2">
+    <p class="text-decoration-none">
+      설정으로 이동하여 vnStat 패키지를 설치하고 데이터베이스를 준비해 주세요.
+    </p>
+    </div>
+    <div class="card mt-3 mb-3 text-white bg-dark">
+    <div class="card-body">
+      <p class="card-text">${data.split('\n').join('<br>\n').replace(/\s/g, '&nbsp;')}</p>
+    </div>
+    </div>`
+    document.getElementById("show_if_error").innerHTML = str;
+    $('#show_if_error').collapse('show');
+  }
+
+  function make_html(id) {
+    // to selection header
+    str = ''
+    current_traffic = current_data.data[0]
+    for (i in current_data.data) {
+      str += `<option value="${current_data.data[i].id}">${current_data.data[i].id}</option>`
+      if (current_data.data[i].id == id) {
+        current_traffic = current_data.data[i]
+      }
+    }
+    document.getElementById("interface_id").innerHTML = str;
+    document.getElementById('interface_id').value = current_traffic.id;
+
+    // to summary_card
+    str = `데이터베이스 생성일: ${current_traffic.created}, 최근 업데이트: ${current_traffic.updated}`
+    document.getElementById("dbdates_p").innerHTML = str;
+    document.getElementById("tbl_summary").innerHTML = make_table(current_traffic['summary'], '_')
+
+    // complete tabs
+    activeTabId = $('.tab-content .active').attr('id');
+    make_tabs(activeTabId)
+  }
+
+  function make_tabs(tab_id) {
+    if (tab_id.endsWith('시간대별')) {
+      draw_traffic_to_canvas(current_traffic['hours'], 'M', "chart_hours");
+      document.getElementById("tbl_hours").innerHTML = make_table(current_traffic['hours'], 'M');
+    } else if (tab_id.endsWith('일별')) {
+      draw_traffic_to_canvas(current_traffic['days'], 'G', "chart_days");
+      document.getElementById("tbl_days").innerHTML = make_table(current_traffic['days'], 'G');
+    } else if (tab_id.endsWith('월별')) {
+      draw_traffic_to_canvas(current_traffic['months'], 'T', "chart_months");
+      document.getElementById("tbl_months").innerHTML = make_table(current_traffic['months'], 'T');
+    } else if (tab_id.endsWith('Top10')) {
+      draw_traffic_to_canvas(current_traffic['tops'], 'G', "chart_tops");
+      document.getElementById("tbl_tops").innerHTML = make_table(current_traffic['tops'], 'G');
+    }
+  }
+
+  $("body").on('click', '#change_interface_btn', function (e) {
+    e.preventDefault();
+    current_interface_id = document.getElementById("interface_id").value;
+    make_html(current_interface_id)
+  });
+
+  $("body").on('change', '#interface_id', function (e) {
+    e.preventDefault();
+    current_interface_id = document.getElementById("interface_id").value;
+    make_html(current_interface_id)
+  });
+  
+  $('a[id^="tab_"]').click(function(e) {
+    e.preventDefault()
+    make_tabs($(this).attr('id'))
+    $('html,body').animate({scrollTop: $(this).offset().top-60},'slow');
+  });
+
+  function sizeOf(bytes, _in, _with) {
+    var thresh = bytes_in_si ? 1000 : 1024;
+    var units = bytes_in_si 
+        ? ['kB','MB','GB','TB','PB','EB','ZB','YB']
+        : ['KiB','MiB','GiB','TiB','PiB','EiB','ZiB','YiB'];
+    if(_in=='_') {
+      // human readable size
+      if(Math.abs(bytes) < thresh) {
+        return _with ? bytes + ' B' : bytes;
+      }
+      var u = -1;
+      do {
+          bytes /= thresh;
+          ++u;
+      } while(Math.abs(bytes) >= thresh && u < units.length - 1);
+      return _with ? bytes.toFixed(2)+' '+units[u] : parseFloat(bytes.toFixed(2));
+    } else {
+      var u = -1;
+      do {
+          bytes /= thresh;
+          ++u;
+      } while(u < units.length - 1 && !(units[u].startsWith(_in)));
+      return _with ? bytes.toFixed(2)+' '+units[u] : parseFloat(bytes.toFixed(2));
+    }
+  }
+
+  function make_table(traffic, bytes_in) {
+    // table head
+    str =
+      `<thead><tr>
+      <th scope="col"></th>
+      <th scope="col" class="text-right">다운로드</th>
+      <th scope="col" class="text-right">업로드</th>
+      <th scope="col" class="text-right">합계</th>
+      </tr></thead>`
+    str += '<tbody>'
+    // table rows
+    for (i in traffic['labels']) {
+      str += `<tr><th scope="row" class="text-right">${traffic['labels'][i]}</th>
+      <td class="text-right">${sizeOf(traffic['rxs'][i], bytes_in, true)}</td>
+      <td class="text-right">${sizeOf(traffic['txs'][i], bytes_in, true)}</td>
+      <td class="text-right">${sizeOf(traffic['totals'][i], bytes_in, true)}</td></tr>`
+    }
+    str += '</tbody>'
+    return str
+  }
+</script>
+
+
+{# Chart.js 관련 #}
+<script>
+  var traffic_chart = null;
+
+  function draw_traffic_to_canvas(traffic, bytes_in, canvas_id) {
+    // Global parameters:
+    Chart.defaults.global.responsive = true;
+    Chart.defaults.global.maintainAspectRatio = false;
+
+    // 이렇게 하지 않으면 chart 오브젝트가 오버랩되어 마우스 호버링 시에 챠트가 왔다갔다함
+    // 그냥 각각 다 선언해버려? 그래도 이렇게 하면 메모리라도 덜 먹겠지...
+    if(traffic_chart!=null) {
+      traffic_chart.destroy();
+    }
+
+    // define the chart data
+    var traffic_xy = get_chartData(traffic['labels'],
+      '다운로드', traffic['rxs'].map((value, index, array) => { return sizeOf(value, bytes_in, false)}),
+      '업로드', traffic['txs'].map((value, index, array) => { return sizeOf(value, bytes_in, false)}),
+      '합계', traffic['totals'].map((value, index, array) => { return sizeOf(value, bytes_in, false)}),
+    )
+
+    // get chart canvas
+    var ctx = document.getElementById(canvas_id).getContext("2d");
+
+    // create the chart using the chart canvas
+    traffic_chart = new Chart(ctx, {
+      type: 'line',
+      data: traffic_xy,
+    });
+  }
+
+  function get_chartData(x_labels, y1_labels, y1_data, y2_labels, y2_data, y3_labels, y3_data) {
+    return {
+      labels: x_labels,
+      datasets: [{
+          label: y1_labels,
+          fill: true,
+          lineTension: 0.1,
+          backgroundColor: "rgba(75,192,192,0.2)",
+          borderColor: "rgba(75,192,192,1)",
+          borderCapStyle: 'butt',
+          borderDash: [],
+          borderDashOffset: 0.0,
+          borderJoinStyle: 'miter',
+          pointBorderColor: "rgba(75,192,192,1)",
+          pointBackgroundColor: "#fff",
+          pointBorderWidth: 1,
+          pointHoverRadius: 5,
+          pointHoverBackgroundColor: "rgba(75,192,192,1)",
+          pointHoverBorderColor: "rgba(220,220,220,1)",
+          pointHoverBorderWidth: 2,
+          pointRadius: 1,
+          pointHitRadius: 10,
+          data: y1_data,
+          spanGaps: false
+        },
+        {
+          label: y2_labels,
+          fill: true,
+          lineTension: 0.1,
+          backgroundColor: "rgba(255,99,132,0.2)",
+          borderColor: "rgba(255,99,132,1)",
+          borderCapStyle: 'butt',
+          borderDash: [],
+          borderDashOffset: 0.0,
+          borderJoinStyle: 'miter',
+          pointBorderColor: "rgba(255,99,132,1)",
+          pointBackgroundColor: "#fff",
+          pointBorderWidth: 1,
+          pointHoverRadius: 5,
+          pointHoverBackgroundColor: "rgba(255,99,132,1)",
+          pointHoverBorderColor: "rgba(220,220,220,1)",
+          pointHoverBorderWidth: 2,
+          pointRadius: 1,
+          pointHitRadius: 10,
+          data: y2_data,
+          spanGaps: false
+        },
+        {
+          label: y3_labels,
+          fill: true,
+          lineTension: 0.1,
+          backgroundColor: "rgba(255,206,86,0.2)",
+          borderColor: "rgba(255,206,86,1)",
+          borderCapStyle: 'butt',
+          borderDash: [],
+          borderDashOffset: 0.0,
+          borderJoinStyle: 'miter',
+          pointBorderColor: "rgba(255,206,86,1)",
+          pointBackgroundColor: "#fff",
+          pointBorderWidth: 1,
+          pointHoverRadius: 5,
+          pointHoverBackgroundColor: "rgba(255,206,86,1)",
+          pointHoverBorderColor: "rgba(220,220,220,1)",
+          pointHoverBorderWidth: 2,
+          pointRadius: 1,
+          pointHitRadius: 10,
+          data: y3_data,
+          spanGaps: false
+        }
+      ]
+    };
+  }
+</script>
+
+
+{% endblock %}
