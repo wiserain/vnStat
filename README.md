@@ -1,19 +1,19 @@
 # vnStat_sjva
 
-vnStat 정보를 보여주는 SJVA 플러그인
+[vnStat](https://humdi.net/vnstat/) 정보를 보여주는 SJVA 플러그인
 
 ## 요구조건
 
 - vnStat 1.18
 - vnStat database (/var/lib/vnstat)
 
-기본적으로 이 플러그인은 [vnStat](https://humdi.net/vnstat/)로 구축된 트래픽 통계를 **보여줍니다.** 그러므로 설치와 통계 구축은 적어도 아직까지는 직접 하셔야합니다. 
+기본적으로 이 플러그인은 vnStat로 구축된 트래픽 통계를 **보여줍니다.** 그러므로 vnStat의 설치와 통계 구축은 적어도 아직까지는 직접 하셔야합니다. 
 
-vnStat 버전은 json으로 결과를 출력할 수 있는 1.13+ 이어야하며, 1.18에서 잘 동작함을 확인했습니다. [vnStat](https://humdi.net/vnstat/)는 리눅스에서만 사용 가능하므로 윈도우즈는 지원하지 않습니다.  
+vnStat 버전은 json으로 결과를 출력할 수 있는 1.13+ 이어야하며, 1.18에서 잘 동작함을 확인했습니다. vnStat는 리눅스에서만 사용 가능하므로 윈도우즈는 지원하지 않습니다.  
 
 ## 준비과정
 
-대부분의 사용자가 docker를 통해 SJVA를 운용하고, 호스트(예를 들면 시놀로지)의 트래픽을 모니터링 하는 시나리오를 가정하겠습니다.
+여기서는 docker를 통해 SJVA를 운용하고, 호스트(예를 들면 시놀로지)의 트래픽을 모니터링 하는 시나리오를 가정하겠습니다.
  
 ### 호스트에 vnStat 설치하기
 
@@ -33,7 +33,9 @@ yum install vnstat
 
 [https://github.com/Entware/Entware/wiki/Install-on-Synology-NAS](https://github.com/Entware/Entware/wiki/Install-on-Synology-NAS)
 
-설치가 끝나면 opkg를 통해 vnStat 1.18 버전을 설치할 수 있습니다.
+링크의 설치 과정을 보면 아시겠지만 바인드 마운트한 /opt에 Entware를 설치하기 때문에 이 폴더를 이미 사용중이거나 다른 프로그램 설치를 이미 시도하신 적이 있다면 적절히 삭제 후에 진행해야 합니다. 시스템을 건드리는 부분이니 주의를 요합니다.
+
+설치가 끝나면 opkg를 통해 vnStat 1.18 버전을 설치할 수 있습니다. (설치 직후에는 PATH가 적용되지 않아서 커맨드가 안 먹을 수 있습니다. 쉘 다시 로그인 하거나 속시원하게 재부팅 한번 해주세요.)
 
 ```bash
 opkg update && opkg install vnstat
