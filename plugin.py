@@ -38,8 +38,8 @@ def plugin_unload():
 
 
 plugin_info = {
-    "catogory_name": "tool",
-    "version": "0.0.9.1",
+    "category_name": "tool",
+    "version": "0.0.9.2",
     "name": "vnStat",
     "home": "https://github.com/wiserain/vnStat_sjva",
     "more": "https://github.com/wiserain/vnStat_sjva",
@@ -56,8 +56,9 @@ menu = {
     'main': [package_name, 'vnStat'],
     'sub': [
         ['setting', '설정'], ['traffic', '트래픽'], ['log', '로그']
-    ]
-}  
+    ],
+    'category': 'tool',
+}
 
 
 #########################################################
