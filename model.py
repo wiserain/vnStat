@@ -9,11 +9,9 @@ import json
 # sjva 공용
 from framework.logger import get_logger
 from framework import db, app, path_app_root
-# 패키지
 
-# 로그
-package_name = __name__.split('.')[0].split('_sjva')[0]
-logger = get_logger(package_name)
+# 패키지
+from .plugin import package_name, logger
 
 if app.config['config']['run_by_real']:
     # dir_name = os.path.dirname(__file__)

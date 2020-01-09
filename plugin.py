@@ -17,10 +17,10 @@ from framework import app, db, scheduler
 from framework.util import Util
             
 # 패키지
+package_name = __name__.split('.')[0]
+logger = get_logger(package_name)
 from logic import Logic
 from model import ModelSetting
-package_name = __name__.split('.')[0].split('_sjva')[0]
-logger = get_logger(package_name)
 
 blueprint = Blueprint(
     package_name, package_name,
@@ -39,13 +39,13 @@ def plugin_unload():
 
 plugin_info = {
     "category_name": "tool",
-    "version": "0.0.9.2",
+    "version": "0.1.0.0",
     "name": "vnStat",
-    "home": "https://github.com/wiserain/vnStat_sjva",
-    "more": "https://github.com/wiserain/vnStat_sjva",
+    "home": "https://github.com/wiserain/vnStat",
+    "more": "https://github.com/wiserain/vnStat",
     "description": "vnStat 정보를 보여주는 플러그인",
     "developer": "wiserain",
-    "zip": "https://github.com/wiserain/vnStat_sjva/archive/master.zip",
+    "zip": "https://github.com/wiserain/vnStat/archive/master.zip",
     "icon": ""
 }
 #########################################################

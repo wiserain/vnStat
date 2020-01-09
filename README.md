@@ -1,4 +1,4 @@
-# vnStat_sjva
+# vnStat
 
 [vnStat](https://humdi.net/vnstat/) 정보를 보여주는 SJVA 플러그인
 
@@ -116,7 +116,7 @@ docker run -d \
     ...
     -v /var/lib/vnstat:/var/lib/vnstat:ro
     ...
-    soju6jan/sjva:0.1.0
+    soju6jan/sjva:0.2
 ```
 
 이제 거의 다 되었습니다. 
