@@ -1,11 +1,1 @@
-{
-    "category_name": "tool",
-    "version": "0.1.0.0",
-    "name": "vnStat",
-    "home": "https://github.com/wiserain/vnStat",
-    "more": "https://github.com/wiserain/vnStat",
-    "description": "vnStat 정보를 보여주는 플러그인",
-    "developer": "wiserain",
-    "zip": "https://github.com/wiserain/vnStat/archive/master.zip",
-    "icon": ""
-}
+{"version": "0.1.1.0", "name": "vnStat", "zip": "https://github.com/wiserain/vnStat/archive/master.zip", "developer": "wiserain", "home": "https://github.com/wiserain/vnStat", "description": "vnStat \uc815\ubcf4\ub97c \ubcf4\uc5ec\uc8fc\ub294 \ud50c\ub7ec\uadf8\uc778", "more": "https://github.com/wiserain/vnStat", "icon": "", "category_name": "tool"}

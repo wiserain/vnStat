@@ -2,10 +2,8 @@
 #########################################################
 # python
 import os
-import sys
 import traceback
-from datetime import datetime, timedelta
-import logging
+from datetime import datetime
 import subprocess
 import json
 
@@ -24,8 +22,7 @@ from .model import ModelSetting
 
 class Logic(object):
     # 디폴트 세팅값
-    db_default = { 
-        'auto_start': 'False',
+    db_default = {
         'interval': '20',
         'default_interface_id': '',
         'default_traffic_view': '2',
@@ -54,9 +51,9 @@ class Logic(object):
             from plugin import plugin_info
             Util.save_from_dict_to_json(plugin_info, os.path.join(os.path.dirname(__file__), 'info.json'))
 
-            # 자동시작 옵션이 있으면 보통 여기서 
-            if ModelSetting.query.filter_by(key='auto_start').first().value == 'True':
-                Logic.scheduler_start()
+            # 기타 자동시작 옵션
+            if not Logic.is_installed():
+                Logic.install()
         except Exception as e: 
             logger.error('Exception:%s', e)
             logger.error(traceback.format_exc())
@@ -65,26 +62,6 @@ class Logic(object):
     def plugin_unload():
         try:
             logger.debug('%s plugin_unload', package_name)
-        except Exception as e: 
-            logger.error('Exception:%s', e)
-            logger.error(traceback.format_exc())
-
-    @staticmethod
-    def scheduler_start():
-        try:
-            logger.debug('%s scheduler_start', package_name)
-            interval = ModelSetting.query.filter_by(key='interval').first().value
-            job = Job(package_name, package_name, interval, Logic.scheduler_function, u"vnStat", False)
-            scheduler.add_job_instance(job)
-        except Exception as e: 
-            logger.error('Exception:%s', e)
-            logger.error(traceback.format_exc())
-    
-    @staticmethod
-    def scheduler_stop():
-        try:
-            logger.debug('%s scheduler_stop', package_name)
-            scheduler.remove_job(package_name)
         except Exception as e: 
             logger.error('Exception:%s', e)
             logger.error(traceback.format_exc())
@@ -102,59 +79,48 @@ class Logic(object):
             logger.error('Exception:%s', e)
             logger.error(traceback.format_exc())
             return False
-
-    @staticmethod
-    def get_setting_value(key):
-        try:
-            return db.session.query(ModelSetting).filter_by(key=key).first().value
-        except Exception as e: 
-            logger.error('Exception:%s', e)
-            logger.error(traceback.format_exc())
-
-    @staticmethod
-    def scheduler_function():
-        try:
-            logger.debug('%s scheduler_function', package_name)
-        except Exception as e: 
-            logger.error('Exception:%s', e)
-            logger.error(traceback.format_exc())
     # 기본 구조 End
     ##################################################################
 
     @staticmethod
-    def is_vnstat_installed():
+    def is_installed():
         try:
-            return subprocess.check_output("which vnstat", shell=True, stderr=subprocess.STDOUT).decode('utf-8').strip()
-        except:
+            verstr = subprocess.check_output("vnstat -v", shell=True, stderr=subprocess.STDOUT).decode('utf-8').strip()
+            vernum = verstr.split()[1]
+            return vernum
+        except Exception:
             return False
 
     @staticmethod
-    def install_vnstat():
-        ret = {}
+    def install():
         try:
-            if Logic.is_vnstat_installed():
-                vnstat_ver = subprocess.check_output("vnstat -v", shell=True, stderr=subprocess.STDOUT).decode('utf-8').strip()
-                ret['ret'] = 'installed'
-                ret['log'] = ' '.join(vnstat_ver.split()[:2])
-                return ret
-
             import platform
+            install_cmd = ''
             os_name, os_dist = platform.system(), platform.dist()[0]
-            ret['ret'] = 'Unsupported system and distribution'
-            ret['log'] = 'System: %s Distribution: %s' % (os_name, os_dist)
             if os_name == 'Linux':
                 if os_dist == 'Ubuntu':
-                    ret['ret'] = 'success'
-                    ret['command'] = 'apt-get install vnstat -y'
+                    install_cmd = 'apt-get install vnstat -y'
                 elif os_dist == '' and app.config['config']['running_type'] == 'docker':
-                    ret['ret'] = 'success'
-                    ret['command'] = 'apk add --no-cache vnstat'
+                    install_cmd = 'apk add --no-cache vnstat'
+
+            if not install_cmd:
+                return {'succes': False, 'log': '지원하지 않는 시스템입니다.'}
+            else:
+                returncode = subprocess.check_call(install_cmd.split())
+                # command check
+                if returncode != 0:
+                    return {'success': False, 'log': '설치 중 에러 발생 exitcode: {}'.format(returncode)}
+
+                # finally check vnStat imported
+                vernum = Logic.is_installed()
+                if vernum:
+                    return {'success': True, 'log': 'vnStat v{}'.format(vernum), 'version': vernum}
+                else:
+                    return {'success': False, 'log': '설치 후 알수없는 에러. 개발자에게 보고바람'}
         except Exception as e:
             logger.error('Exception:%s', e)
             logger.error(traceback.format_exc())
-            ret['ret'] = 'exception'
-            ret['log'] = str(e)
-        return ret
+            return {'success': False, 'log': str(e)}
 
     @staticmethod
     def parsing_vnstat_traffic(traffic, data_type):

@@ -4,7 +4,6 @@
 #########################################################
 # python
 import os
-import sys
 import traceback
 
 # third-party
@@ -19,6 +18,7 @@ from framework.util import Util
 # 패키지
 package_name = __name__.split('.')[0]
 logger = get_logger(package_name)
+
 from logic import Logic
 from model import ModelSetting
 
@@ -39,7 +39,7 @@ def plugin_unload():
 
 plugin_info = {
     "category_name": "tool",
-    "version": "0.1.0.0",
+    "version": "0.1.1.0",
     "name": "vnStat",
     "home": "https://github.com/wiserain/vnStat",
     "more": "https://github.com/wiserain/vnStat",
@@ -74,18 +74,15 @@ def home():
 def detail(sub):
     logger.debug('menu %s %s', package_name, sub)
     if sub == 'setting':
-        setting_list = db.session.query(ModelSetting).all()
-        arg = Util.db_list_to_dict(setting_list)
-        arg['scheduler'] = str(scheduler.is_include(package_name))
-        arg['is_running'] = str(scheduler.is_running(package_name))
+        arg = ModelSetting.to_dict()
         return render_template('%s_setting.html' % package_name, sub=sub, arg=arg)
     elif sub == 'traffic':
-        setting_list = db.session.query(ModelSetting).all()
-        arg = Util.db_list_to_dict(setting_list)
+        arg = ModelSetting.to_dict()
         return render_template('%s_traffic.html' % package_name, arg=arg)
     elif sub == 'log':
         return render_template('log.html', package=package_name)
     return render_template('sample.html', title='%s - %s' % (package_name, sub))
+
 
 #########################################################
 # For UI                                                          
@@ -101,33 +98,27 @@ def ajax(sub):
         except Exception as e: 
             logger.error('Exception:%s', e)
             logger.error(traceback.format_exc())
-    # 스케쥴링 on / off
-    elif sub == 'scheduler':
+    elif sub == 'install':
         try:
-            go = request.form['scheduler']
-            logger.debug('scheduler :%s', go)
-            if go == 'true':
-                Logic.scheduler_start()
-            else:
-                Logic.scheduler_stop()
-            return jsonify(go)
-        except Exception as e: 
-            logger.error('Exception:%s', e)
-            logger.error(traceback.format_exc())
-            return jsonify('fail')
-    elif sub == 'install_vnstat':
-        try:
-            ret = Logic.install_vnstat()
+            ret = Logic.install()
             return jsonify(ret)
         except Exception as e: 
             logger.error('Exception:%s', e)
             logger.error(traceback.format_exc())
+    elif sub == 'is_installed':
+        try:
+            is_installed = Logic.is_installed()
+            if is_installed:
+                ret = {'installed': True, 'version': is_installed}
+            else:
+                ret = {'installed': False}
+            return jsonify(ret)
+        except Exception as e:
+            logger.error('Exception:%s', e)
+            logger.error(traceback.format_exc())
     elif sub == 'get_default_interface_id':
         try:
-            setting_list = db.session.query(ModelSetting).all()
-            arg = Util.db_list_to_dict(setting_list)
-            print(arg)
-            return jsonify({'default_interface_id': arg['default_interface_id']})
+            return jsonify({'default_interface_id': ModelSetting.get('default_interface_id')})
         except Exception as e: 
             logger.error('Exception:%s', e)
             logger.error(traceback.format_exc())
@@ -138,6 +129,7 @@ def ajax(sub):
         except Exception as e:
             logger.error('Exception:%s', e)
             logger.error(traceback.format_exc())
+
 
 #########################################################
 # API

@@ -3,21 +3,19 @@
 # python
 import os
 import traceback
-import json
+
 # third-party
 
 # sjva 공용
-from framework.logger import get_logger
 from framework import db, app, path_app_root
+from framework.util import Util
 
 # 패키지
 from .plugin import package_name, logger
 
-if app.config['config']['run_by_real']:
-    # dir_name = os.path.dirname(__file__)
-    # db_file = dir_name.replace(path_app_root, '').replace('\\', '/') + '/%s.db' % package_name
-    db_file = os.path.join(path_app_root, 'data', 'db', '%s.db' % package_name)
-    app.config['SQLALCHEMY_BINDS'][package_name] = 'sqlite:///%s' % (db_file)
+
+db_file = os.path.join(path_app_root, 'data', 'db', '%s.db' % package_name)
+app.config['SQLALCHEMY_BINDS'][package_name] = 'sqlite:///%s' % (db_file)
 
 
 class ModelSetting(db.Model):
@@ -39,5 +37,48 @@ class ModelSetting(db.Model):
     def as_dict(self):
         return {x.name: getattr(self, x.name) for x in self.__table__.columns}
 
-#########################################################
+    @staticmethod
+    def get(key):
+        try:
+            return db.session.query(ModelSetting).filter_by(key=key).first().value.strip()
+        except Exception as e:
+            logger.error('Exception:%s %s', e, key)
+            logger.error(traceback.format_exc())
 
+    @staticmethod
+    def get_int(key):
+        try:
+            return int(ModelSetting.get(key))
+        except Exception as e:
+            logger.error('Exception:%s %s', e, key)
+            logger.error(traceback.format_exc())
+
+    @staticmethod
+    def get_bool(key):
+        try:
+            return ModelSetting.get(key) == 'True'
+        except Exception as e:
+            logger.error('Exception:%s %s', e, key)
+            logger.error(traceback.format_exc())
+
+    @staticmethod
+    def set(key, value):
+        try:
+            item = db.session.query(ModelSetting).filter_by(key=key).with_for_update().first()
+            if item is not None:
+                item.value = value.strip()
+                db.session.commit()
+            else:
+                db.session.add(ModelSetting(key, value.strip()))
+        except Exception as e:
+            logger.error('Exception:%s %s', e, key)
+            logger.error(traceback.format_exc())
+
+    @staticmethod
+    def to_dict():
+        try:
+            return Util.db_list_to_dict(db.session.query(ModelSetting).all())
+        except Exception as e:
+            logger.error('Exception:%s', e)
+            logger.error(traceback.format_exc())
+#########################################################

@@ -10,11 +10,8 @@
   <div class="tab-content" id="nav-tabContent">
     <!-- 일반 -->
     {{ macros.m_tab_content_start('일반', true) }}
-      {# {{ macros.setting_global_scheduler_button(arg['scheduler'], arg['is_running']) }} #}
-      <form id='setting' name='setting'>
-        {# {{ macros.setting_input_int('interval', '트래픽 모니터링 주기', value=arg['interval'], min='1', placeholder='2', desc='minute 단위') }} #}
-        {# {{ macros.setting_checkbox('auto_start', '시작시 자동실행', value=arg['auto_start'], desc='On : 시작시 자동으로 스케쥴러에 등록됩니다.') }} #}
-        {{ macros.setting_button_with_info([['install_vnstat_btn', '설치하기']], 'vnStat 설치', 'Windows는 지원하지 않음') }}
+      <form id="setting" name="setting">
+        {{ macros.setting_button_with_info([['install_btn', '설치하기']], 'vnStat 설치', '우분투와 도커만 지원. 다른 시스템은 직접 설치 후 새로고침 해 보세요.') }}
         {{ macros.setting_select_and_buttons('default_interface_id', '기본 인터페이스', [['','']], [['get_interface_btn', '목록 가져오기']], col='8', desc=['기본으로 보여줄 네트워크 인터페이스 선택']) }}
         {{ macros.setting_radio('default_traffic_view', '기본 트래픽 보기', ['시간대별', '일별', '월별', 'Top10'], value=arg['default_traffic_view']) }}
         {{ macros.setting_radio('traffic_unit', '트래픽 표시 단위', ['SI 단위 (MB, GB, TB)', 'IEC 단위 (MiB, GiB, TiB)'], value=arg['traffic_unit']) }}
@@ -35,6 +32,23 @@ var current_data = null;
 var default_interface_id = "{{arg['default_interface_id']}}"
 
 $(document).ready(function(){
+
+  $(function() {
+    $.ajax({
+      url: '/' + package_name + '/ajax/is_installed',
+      type: "POST",
+      cache: false,
+      data: {},
+      dataType: "json",
+      success: function(data) {
+        if (data.installed) {
+          $('#install_btn').prop('disabled', true);
+          $('#install_btn').html('설치됨');
+          $('#install_btn').parent().next().html('<em>vnStat v' + data.version + '</em>');
+        }
+      }
+    });
+  });
   
   $(function() {
     $.ajax({
@@ -54,41 +68,27 @@ $(document).ready(function(){
 
 });
 
-// 스케쥴링 on / off
-$('#scheduler').change(function() {
-  var ret = $(this).prop('checked');
-  $.ajax({
-    url: '/' + package_name + '/ajax/scheduler',
-    type: "POST", 
-    cache: false,
-    data: {scheduler : ret},
-    dataType: "json",
-    success: function (list) {
-    }
-  });
-});
-
 // vnstat 설치 버튼
-$("body").on('click', '#install_vnstat_btn', function(e){
+$("body").on('click', '#install_btn', function(e){
   e.preventDefault();
   $.ajax({
-    url: '/' + package_name + '/ajax/install_vnstat',
+    url: '/' + package_name + '/ajax/install',
     type: "POST",
     cache: false,
     dataType: "json",
     success: function (data) {
-      if (data.ret =='success') {          
-        redirect = '/command/api/command'
-        $.redirectPost(redirect, {command: data.command});
-      } else if (data.ret =='installed') {
-        $.notify('<strong>이미 설치되어 있습니다.</strong><br>' + data.log, {
-          type: 'success'
-        });
-      } else {
-        $.notify('<strong>실패하였습니다.</strong><br>' + data.log, {
-        type: 'warning'
-        });
-      }
+        if (data.success) {
+            $('#install_btn').prop('disabled', true);
+            $('#install_btn').html('설치됨');
+            $('#install_btn').parent().next().html('<em>vnStat v' + data.version + '</em>');
+            $.notify('<strong>성공적으로 설치하였습니다.</strong><br>' + data.log, {
+                type: 'success'
+            });
+        } else {
+            $.notify('<strong>실패하였습니다.</strong><br>' + data.log, {
+                type: 'warning'
+            });
+        }
     }
   });
 });
