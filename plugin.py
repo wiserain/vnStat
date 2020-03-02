@@ -88,6 +88,7 @@ def detail(sub):
 # For UI                                                          
 #########################################################
 @blueprint.route('/ajax/<sub>', methods=['GET', 'POST'])
+@login_required
 def ajax(sub):
     logger.debug('AJAX %s %s', package_name, sub)
     # 설정 저장
@@ -129,11 +130,3 @@ def ajax(sub):
         except Exception as e:
             logger.error('Exception:%s', e)
             logger.error(traceback.format_exc())
-
-
-#########################################################
-# API
-#########################################################
-@blueprint.route('/api/<sub>', methods=['GET', 'POST'])
-def api(sub):
-    logger.debug('api %s %s', package_name, sub)
