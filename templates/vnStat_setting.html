@@ -11,7 +11,7 @@
     <!-- 일반 -->
     {{ macros.m_tab_content_start('일반', true) }}
       <form id="setting" name="setting">
-        {{ macros.setting_button_with_info([['install_btn', '설치하기']], 'vnStat 설치', '우분투와 도커만 지원. 다른 시스템은 직접 설치 후 새로고침 해 보세요.') }}
+        {{ macros.setting_button_with_info([['install_btn', '설치하기']], 'vnStat 설치', 'alpine 도커만 지원. 다른 시스템은 직접 설치 후 새로고침 해 보세요.') }}
         {{ macros.setting_select_and_buttons('default_interface_id', '기본 인터페이스', [['','']], [['get_interface_btn', '목록 가져오기']], col='8', desc=['기본으로 보여줄 네트워크 인터페이스 선택']) }}
         {{ macros.setting_radio('default_traffic_view', '기본 트래픽 보기', ['시간대별', '일별', '월별', 'Top10'], value=arg['default_traffic_view']) }}
         {{ macros.setting_radio('traffic_unit', '트래픽 표시 단위', ['SI 단위 (MB, GB, TB)', 'IEC 단위 (MiB, GiB, TiB)'], value=arg['traffic_unit']) }}

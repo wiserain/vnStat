@@ -52,7 +52,8 @@ class Logic(object):
             Util.save_from_dict_to_json(plugin_info, os.path.join(os.path.dirname(__file__), 'info.json'))
 
             # 기타 자동시작 옵션
-            if not Logic.is_installed():
+            is_installed = Logic.is_installed()
+            if not is_installed or not any(x in is_installed for x in plugin_info['supported_vnstat_version']):
                 Logic.install()
         except Exception as e: 
             logger.error('Exception:%s', e)
@@ -87,6 +88,9 @@ class Logic(object):
         try:
             verstr = subprocess.check_output("vnstat -v", shell=True, stderr=subprocess.STDOUT).decode('utf-8').strip()
             vernum = verstr.split()[1]
+            from plugin import plugin_info
+            if not any(vernum in x for x in plugin_info['supported_vnstat_version']):
+                vernum += ' - 지원하지 않는 버전'
             return vernum
         except Exception:
             return False
@@ -94,29 +98,29 @@ class Logic(object):
     @staticmethod
     def install():
         try:
-            import platform
-            install_cmd = ''
-            os_name, os_dist = platform.system(), platform.dist()[0]
-            if os_name == 'Linux':
-                if os_dist == 'Ubuntu':
-                    install_cmd = 'apt-get install vnstat -y'
-                elif os_dist == '' and app.config['config']['running_type'] == 'docker':
-                    install_cmd = 'apk add --no-cache vnstat'
-
-            if not install_cmd:
-                return {'succes': False, 'log': '지원하지 않는 시스템입니다.'}
-            else:
-                returncode = subprocess.check_call(install_cmd.split())
-                # command check
-                if returncode != 0:
-                    return {'success': False, 'log': '설치 중 에러 발생 exitcode: {}'.format(returncode)}
-
+            import platform, threading
+            if platform.system() == 'Linux' and app.config['config']['running_type'] == 'docker':
+                install_sh = os.path.join(os.path.dirname(__file__), 'install.sh')
+                def func():
+                    import system
+                    commands = [
+                        ['msg', u'잠시만 기다려주세요.'],
+                        ['chmod', '+x', install_sh],
+                        [install_sh, '1.18'],
+                        ['msg', u'설치가 완료되었습니다.']
+                    ]
+                    system.SystemLogicCommand.start('설치', commands)
+                t = threading.Thread(target=func, args=())
+                t.setDaemon(True)
+                t.start()
                 # finally check vnStat imported
                 vernum = Logic.is_installed()
                 if vernum:
                     return {'success': True, 'log': 'vnStat v{}'.format(vernum), 'version': vernum}
                 else:
-                    return {'success': False, 'log': '설치 후 알수없는 에러. 개발자에게 보고바람'}
+                    return {'success': False, 'log': '설치 후 알 수 없는 에러. 개발자에게 보고바람'}
+            else:
+                return {'succes': False, 'log': '지원하지 않는 시스템입니다.'}
         except Exception as e:
             logger.error('Exception:%s', e)
             logger.error(traceback.format_exc())
