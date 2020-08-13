@@ -241,8 +241,7 @@
     // define the chart data
     var traffic_xy = get_chartData(traffic['labels'],
       '다운로드', traffic['rxs'].map((value, index, array) => { return sizeOf(value, bytes_in, false)}),
-      '업로드', traffic['txs'].map((value, index, array) => { return sizeOf(value, bytes_in, false)}),
-      '합계', traffic['totals'].map((value, index, array) => { return sizeOf(value, bytes_in, false)}),
+      '업로드', traffic['txs'].map((value, index, array) => { return sizeOf(value, bytes_in, false)})
     )
 
     // get chart canvas
@@ -250,79 +249,78 @@
 
     // create the chart using the chart canvas
     traffic_chart = new Chart(ctx, {
-      type: 'line',
+      type: 'bar',
       data: traffic_xy,
+      options: {
+        tooltips: {
+          enabled: true,
+          mode: "x-axis",
+          callbacks: {
+            label: function(tooltipItem, data) {
+              var di = tooltipItem.datasetIndex;   // dataset index
+              var xi = tooltipItem.index;   // index over x-axis
+              var ret = data.datasets[di].label + ": " + (data.datasets[di].data[xi]).toFixed(2);
+              if (xi > 0) {
+                var delta = data.datasets[di].data[xi] - data.datasets[di].data[xi-1];
+                ret += " (" + ((delta > 0) ? "+" : "") + delta.toFixed(2)  + ")"
+              }
+              return ret;
+            },
+            footer: function(tooltipItems, data) {
+              if (tooltipItems.length > 1) {
+                function totalAcrossDatasets(_tooltipItems, _data, _xi) {
+                  var total = 0.0;
+                  for (var i=0; i<_tooltipItems.length; i++) {                
+                    total += _data.datasets[_tooltipItems[i].datasetIndex].data[_xi];
+                  }
+                  return total;
+                }
+                var xi = tooltipItems[0].index;   // index over x-axis
+                var currTotal = totalAcrossDatasets(tooltipItems, data, xi);
+                var ret = "합계: " + currTotal.toFixed(2);
+                if (xi > 0) {
+                  var prevTotal = totalAcrossDatasets(tooltipItems, data, xi-1);
+                  var delta = currTotal - prevTotal;
+                  ret += " (" + ((delta > 0) ? "+" : "") + delta.toFixed(2)  + ")"
+                }
+                return ret;
+              }
+            }
+          }
+        },
+        scales: {
+            xAxes: [{
+                stacked: true
+            }],
+            yAxes: [{
+                stacked: true,
+                ticks: {
+                  beginAtZero: true
+                }
+            }]
+        }
+    }
     });
   }
 
-  function get_chartData(x_labels, y1_labels, y1_data, y2_labels, y2_data, y3_labels, y3_data) {
+  function get_chartData(x_labels, y1_labels, y1_data, y2_labels, y2_data) {
     return {
       labels: x_labels,
       datasets: [{
           label: y1_labels,
           fill: true,
           lineTension: 0.1,
-          backgroundColor: "rgba(75,192,192,0.2)",
+          backgroundColor: "rgba(75,192,192,1)",
           borderColor: "rgba(75,192,192,1)",
-          borderCapStyle: 'butt',
-          borderDash: [],
-          borderDashOffset: 0.0,
-          borderJoinStyle: 'miter',
-          pointBorderColor: "rgba(75,192,192,1)",
-          pointBackgroundColor: "#fff",
-          pointBorderWidth: 1,
-          pointHoverRadius: 5,
-          pointHoverBackgroundColor: "rgba(75,192,192,1)",
-          pointHoverBorderColor: "rgba(220,220,220,1)",
-          pointHoverBorderWidth: 2,
-          pointRadius: 1,
-          pointHitRadius: 10,
-          data: y1_data,
-          spanGaps: false
+          data: y1_data
         },
         {
           label: y2_labels,
           fill: true,
           lineTension: 0.1,
-          backgroundColor: "rgba(255,99,132,0.2)",
+          backgroundColor: "rgba(255,99,132,1)",
           borderColor: "rgba(255,99,132,1)",
-          borderCapStyle: 'butt',
-          borderDash: [],
-          borderDashOffset: 0.0,
-          borderJoinStyle: 'miter',
-          pointBorderColor: "rgba(255,99,132,1)",
-          pointBackgroundColor: "#fff",
-          pointBorderWidth: 1,
-          pointHoverRadius: 5,
-          pointHoverBackgroundColor: "rgba(255,99,132,1)",
-          pointHoverBorderColor: "rgba(220,220,220,1)",
-          pointHoverBorderWidth: 2,
-          pointRadius: 1,
-          pointHitRadius: 10,
-          data: y2_data,
-          spanGaps: false
-        },
-        {
-          label: y3_labels,
-          fill: true,
-          lineTension: 0.1,
-          backgroundColor: "rgba(255,206,86,0.2)",
-          borderColor: "rgba(255,206,86,1)",
-          borderCapStyle: 'butt',
-          borderDash: [],
-          borderDashOffset: 0.0,
-          borderJoinStyle: 'miter',
-          pointBorderColor: "rgba(255,206,86,1)",
-          pointBackgroundColor: "#fff",
-          pointBorderWidth: 1,
-          pointHoverRadius: 5,
-          pointHoverBackgroundColor: "rgba(255,206,86,1)",
-          pointHoverBorderColor: "rgba(220,220,220,1)",
-          pointHoverBorderWidth: 2,
-          pointRadius: 1,
-          pointHitRadius: 10,
-          data: y3_data,
-          spanGaps: false
+          data: y2_data
         }
       ]
     };
