@@ -14,13 +14,13 @@ from flask_login import login_required
 from framework.logger import get_logger
 from framework import app, db, scheduler
 from framework.util import Util
-            
+
 # 패키지
 package_name = __name__.split('.')[0]
 logger = get_logger(package_name)
 
-from logic import Logic
-from model import ModelSetting
+from .logic import Logic
+from .model import ModelSetting
 
 blueprint = Blueprint(
     package_name, package_name,
@@ -39,7 +39,7 @@ def plugin_unload():
 
 plugin_info = {
     "category_name": "tool",
-    "version": "0.1.4.0",
+    "version": "0.1.5.0",
     "name": "vnStat",
     "home": "https://github.com/wiserain/vnStat",
     "more": "https://github.com/wiserain/vnStat",

@@ -48,7 +48,7 @@ class Logic(object):
             Logic.db_init()
 
             # 편의를 위해 json 파일 생성
-            from plugin import plugin_info
+            from .plugin import plugin_info
             Util.save_from_dict_to_json(plugin_info, os.path.join(os.path.dirname(__file__), 'info.json'))
 
             # 기타 자동시작 옵션
@@ -88,7 +88,7 @@ class Logic(object):
         try:
             verstr = subprocess.check_output("vnstat -v", shell=True, stderr=subprocess.STDOUT).decode('utf-8').strip()
             vernum = verstr.split()[1]
-            from plugin import plugin_info
+            from .plugin import plugin_info
             if not any(vernum in x for x in plugin_info['supported_vnstat_version']):
                 vernum += ' - 지원하지 않는 버전'
             return vernum
