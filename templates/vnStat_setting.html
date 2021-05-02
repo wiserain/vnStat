@@ -77,14 +77,7 @@ $("body").on('click', '#install_btn', function(e){
     cache: false,
     dataType: "json",
     success: function (data) {
-        if (data.success) {
-            $('#install_btn').prop('disabled', true);
-            $('#install_btn').html('설치됨');
-            $('#install_btn').parent().next().html('<em>vnStat v' + data.version + '</em>');
-            $.notify('<strong>성공적으로 설치하였습니다.</strong><br>' + data.log, {
-                type: 'success'
-            });
-        } else {
+        if (!data.success) {
             $.notify('<strong>실패하였습니다.</strong><br>' + data.log, {
                 type: 'warning'
             });
